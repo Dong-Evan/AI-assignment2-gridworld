@@ -64,10 +64,86 @@ class ValueIterationAgent(ValueEstimationAgent):
           Run the value iteration algorithm. Note that in standard
           value iteration, V_k+1(...) depends on V_k(...)'s.
         """
-        "*** YOUR CODE HERE (1) ***"
-        util.raiseNotDefined()
 
+        '''
+        start wtih V_0(s) = 0
+        Given vector of V_k(s) values, do one ply of expectimax 
+        from each state:
+        <Bellman equation>
+        (compute vector of values V_{k+1}(s))
+        Repeat until convergence
 
+        V_0(s) = 0 for all s
+        k = 0
+        while k < N:
+            for all s in S:
+                do Bellman
+            k = k + 1 // k++
+        '''
+        '''
+        V_0(s) = 0 for all s?
+        states = self.mdp.getStates()
+        for i in range(self.iterations): # k = 0; k < N; k++
+            for state in states: # for all s in S
+                # Bellman: V(s) = max_a sum_s' T(s, a, s')*[R(s, a, s') + gamma*V_k(s')]
+                # i.e., value = max sum of prob of transitioning from s to s' given a * (reward for transitioning from s to s' given a + gamma * value of s')
+                actions = self.mdp.getPossibleActions(state) # get all a in A(s)
+                for action in actions: # for a in A(s)
+                    value = 0
+                    # get T(s, a, s')
+                    # get all successors (nextState), s', for the state, s, given action, a
+                    # and get the prob for each successor (prob of transitioning from s to s' given a)
+                    successors = self.mdp.getTransitionStatesAndProbs(state, action)
+                    # this function gets all (s', prob) pairs for s given a 
+                    # i.e., all (nextState) for currentState, all (prob from currentState to nextState given action) for action in currentState
+                    # e.g., (nextState1, prob1), (nextState2, prob2), ...
+                    for nextState, prob in successors:
+                        # get R(s, a, s')
+                        # get the reward for transitioning from s to s' given a
+                        reward = self.mdp.getReward(state, action, nextState)
+                        # get gamma*V_k(s')
+                        # get the value of the nextState, V_k(s'), and discount it by gamma
+                        gamma = self.discount
+                        #value += prob * (reward + gamma * self.values[nextState])
+                    # update max value for action
+                #update best value for state
+            #update values
+        '''
+        # Q1*
+        # Get all states
+        states = self.mdp.getStates()
+
+        # Loop through all iterations
+        for i in range(self.iterations):
+            # Create a copy of the values
+            new_values = self.values.copy()
+
+            # Loop through all states
+            for state in states:
+                # Check if state is terminal
+                if self.mdp.isTerminal(state):
+                    continue
+
+                # Get all possible actions
+                actions = self.mdp.getPossibleActions(state)
+
+                # Initialize the value
+                value = float("-inf")
+
+                # Loop through all actions
+                for action in actions:
+                    # Get the Q value
+                    # Q(s, a) = sum_s' T(s, a, s')*[R(s, a, s') + gamma*V_k(s')]
+                    q_value = self.computeQValueFromValues(state, action)
+
+                    # Update the value
+                    value = max(value, q_value)
+
+                # Update the value
+                new_values[state] = value
+
+            # Update the values
+            self.values = new_values
 
     def getValue(self, state):
         """
@@ -80,8 +156,27 @@ class ValueIterationAgent(ValueEstimationAgent):
           Compute the Q-value of action in state from the
           value function stored in self.values.
         """
-        "*** YOUR CODE HERE (2) ***"
-        util.raiseNotDefined()
+        # Q1.2
+        # this is basically just the Bellman equation
+        # Q(s, a) = sum_s' T(s, a, s')*[R(s, a, s') + gamma*V_k(s')]
+        
+        # Get the transition states and probs
+        successors = self.mdp.getTransitionStatesAndProbs(state, action)
+
+        q_value = 0
+
+        # loop through all successors and calculate the Q value
+        for next_state, prob in successors:
+            # get reward, R(s, a, s')
+            reward = self.mdp.getReward(state, action, next_state)
+            # get value of next state, discounted by gamma, gamma * V_k(s')
+            gamma = self.discount
+            nextStateValue = gamma * self.values[next_state]
+            # get q value for current state and action, 
+            # sum_s' (T(s, a, s')*[R(s, a, s') + gamma*V_k(s')])
+            q_value += prob * (reward + nextStateValue)
+        
+        return q_value
 
     def computeActionFromValues(self, state):
         """
@@ -92,8 +187,27 @@ class ValueIterationAgent(ValueEstimationAgent):
           there are no legal actions, which is the case at the
           terminal state, you should return None.
         """
-        "*** YOUR CODE HERE (3) ***"
-        util.raiseNotDefined()
+        # Q1.3*
+        # get best action for state
+        # policy(s) = arg_max_{a in actions} Q(s,a)
+        # i.e., get the action that maximizes the Q value for the state
+        actions = self.mdp.getPossibleActions(state)
+
+        # Initialize the best action
+        best_action = None
+        best_value = float("-inf")
+
+        # Loop through all actions
+        for action in actions:
+            # Get the Q value
+            q_value = self.computeQValueFromValues(state, action)
+
+            # Update the best action
+            if q_value > best_value:
+                best_value = q_value
+                best_action = action
+
+        return best_action
 
     def getPolicy(self, state):
         return self.computeActionFromValues(state)
